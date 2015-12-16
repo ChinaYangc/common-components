@@ -1,0 +1,8 @@
+/fansz-utils/target
+/common-dao/target
+target/*
+!.gitignore
+/.idea
+*.iml
+.DS_Store
+
