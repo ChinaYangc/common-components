@@ -6,3 +6,6 @@ target/*
 *.iml
 .DS_Store
 
+/common-utils/target
+/common-redis/target
+

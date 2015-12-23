@@ -27,6 +27,7 @@ import com.fansz.pub.utils.TypeTools;
 import org.hibernate.HibernateException;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.criterion.DetachedCriteria;
 import org.hibernate.criterion.Property;
 import org.slf4j.Logger;
@@ -55,8 +56,8 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * HibernateTemplate实例, 一般由Spring注入
      */
-    @Resource(name = "hibernateTemplate")
-    protected HibernateTemplate hibernateTemplate;
+    @Resource(name = "sessionFactory")
+    protected SessionFactory sessionFactory;
 
     /**
      * 自动创建Query的工具
@@ -72,19 +73,19 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
 
     /**
      * constructor
-     * 
+     *
      * @param entityClass 实体
      */
     public BaseDAOImpl(Class<T> entityClass) {
         this.entityClass = entityClass;
     }
 
-    public void setHibernateTemplate(HibernateTemplate hibernateTemplate) {
-        this.hibernateTemplate = hibernateTemplate;
+    public void setSessionFactory(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
-    public HibernateTemplate getHibernateTemplate() {
-        return hibernateTemplate;
+    public SessionFactory getSessionFactory() {
+        return sessionFactory;
     }
 
     public IQueryBuilder getQueryBuilder() {
@@ -99,19 +100,19 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
      * 清楚
      */
     public void clear() {
-        hibernateTemplate.clear();
+        sessionFactory.getCurrentSession().clear();
     }
 
     /**
      * flush
      */
     public void flush() {
-        hibernateTemplate.flush();
+        sessionFactory.getCurrentSession().flush();
     }
 
     /**
      * 删除方法.
-     * 
+     *
      * @param entityids 实体id
      */
     public void delete(Serializable... entityids) {
@@ -120,10 +121,9 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
                 // 如果找不到实体的话就不用删除了
                 try {
                     if (id.getClass().getAnnotation(Entity.class) != null) {
-                        hibernateTemplate.delete(id);
+                        sessionFactory.getCurrentSession().delete(id);
                     }
-                }
-                catch (EntityNotFoundException ex) {
+                } catch (EntityNotFoundException ex) {
                     LOG.warn(ex.getMessage(), ex);
                 }
 
@@ -134,18 +134,24 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * 根据指定条件删除数据
      *
-     * @param wherejpql jpql 条件
+     * @param wherejpql   jpql 条件
      * @param queryParams jpql 条件
      */
-    protected void deleteByCriteria(String wherejpql, Object[] queryParams) {
+    protected int deleteByCriteria(String wherejpql, Object[] queryParams) {
         String entityname = getEntityName(this.entityClass);
         String hql = "delete from " + entityname + " o " + (StringTools.isBlank(wherejpql) ? "" : "where " + wherejpql);
-        this.hibernateTemplate.bulkUpdate(hql, queryParams);
+        Query queryObj = this.sessionFactory.getCurrentSession().createQuery(hql);
+        if (queryParams != null) {
+            for (int i = 0; i < queryParams.length; i++) {
+                queryObj.setParameter(i, queryParams[i]);
+            }
+        }
+        return Integer.valueOf(queryObj.executeUpdate());
     }
 
     /**
      * 根据实体类id查找对应的对象.
-     * 
+     *
      * @param entityId 实体id
      * @return 实体
      */
@@ -153,60 +159,51 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         if (entityId == null) {
             throw new IllegalArgumentException(this.entityClass.getName() + ":传入的实体id不能为空");
         }
-        return this.hibernateTemplate.load(this.entityClass, entityId);
+        return (T) this.sessionFactory.getCurrentSession().get(this.entityClass, entityId);
     }
 
     /**
      * 保存对象.
-     * 
+     *
      * @param entity 实体
      */
     public void save(T entity) {
-        hibernateTemplate.saveOrUpdate(entity);
+        sessionFactory.getCurrentSession().saveOrUpdate(entity);
     }
 
     public long getCount() {
-        return (Long)hibernateTemplate.find(
-                "select count(" + getCountField(this.entityClass) + ") from " + getEntityName(this.entityClass) + " o")
-                .get(0);
+        Query query = sessionFactory.getCurrentSession().createSQLQuery(
+                "select count(" + getCountField(this.entityClass) + ") from " + getEntityName(this.entityClass) + " o");
+        return ((Integer) query.uniqueResult()).longValue();
     }
 
     /**
      * 更新实体类.
-     * 
+     *
      * @param entity 实体
      */
     public void update(T entity) {
-        hibernateTemplate.update(entity);
+        sessionFactory.getCurrentSession().update(entity);
     }
 
     /**
      * 通过SQL或者HQL批量更新或删除
-     * 
-     * @param queryId 语句的ID
+     *
+     * @param queryId    语句的ID
      * @param parameters 参数
      * @return 更新的记录数
      */
     protected int executeUpdate(final String queryId, final Map<String, Object> parameters) {
-        return this.hibernateTemplate.execute(new HibernateCallback<Integer>()
-        {
-
-            @Override
-            public Integer doInHibernate(Session session) throws HibernateException, SQLException {
-                Query query = queryBuilder.getQuery(session, queryId, parameters);
-                if (query != null) {
-                    return query.executeUpdate();
-                }
-                return 0;
-            }
-
-        });
-
+        Query query = queryBuilder.getQuery(sessionFactory.getCurrentSession(), queryId, parameters);
+        if (query != null) {
+            return query.executeUpdate();
+        }
+        return 0;
     }
 
     /**
      * 查找所有实体类.
-     * 
+     *
      * @return 实体
      */
     public List<T> findAll() {
@@ -224,7 +221,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         for (Map.Entry<String, Object> entry : parameters.entrySet()) {
             criteria.add(Property.forName(entry.getKey()).eq(entry.getValue()));
         }
-        return hibernateTemplate.findByCriteria(criteria);
+        return criteria.getExecutableCriteria(sessionFactory.getCurrentSession()).list();
     }
 
     @Override
@@ -235,7 +232,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * 根据属性=值的方式去查询
      *
-     * @param propertyName 属性名
+     * @param propertyName  属性名
      * @param propertyValue 属性值
      * @return 查询结果
      */
@@ -247,7 +244,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * 获取实体的名称
      *
-     * @param <E> 实体类行
+     * @param <E>   实体类行
      * @param clazz 实体类
      * @return 实体的名称
      */
@@ -263,8 +260,8 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * 获取统计属性,该方法是为了解决hibernate解析联合主键select count(o) from Xxx o语句BUG而增加,hibernate对此jpql解析后的sql为select
      * count(field1,field2,...),显示使用count()统计多个字段是错误的
-     * 
-     * @param <E> 泛型
+     *
+     * @param <E>   泛型
      * @param clazz class
      * @return String
      */
@@ -282,8 +279,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
                     break;
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.error(e.getMessage(), e);
         }
         return out;
@@ -291,17 +287,16 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
 
     /**
      * 通过指定的查询的ID的QL进行查询
-     * 
-     * @param <RowType> RowType
-     * @param queryId 查询id
+     *
+     * @param <RowType>  RowType
+     * @param queryId    查询id
      * @param parameters 参数
      * @return 查到对的数据, 对象数组的List
      */
     protected <RowType> List<RowType> findByNamedQuery(String queryId, Object parameters) {
         if (parameters instanceof Map) {
-            return findByNamedQuery(queryId, (Map<String, Object>)parameters);
-        }
-        else {
+            return findByNamedQuery(queryId, (Map<String, Object>) parameters);
+        } else {
             Map<String, Object> paramMap = BeanTools.getProperties(parameters);
             return findByNamedQuery(queryId, paramMap);
         }
@@ -310,42 +305,34 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
 
     /**
      * 通过指定的查询的ID的QL进行查询
-     * 
-     * @param <RowType> RowType
-     * @param queryId 查询的ID
+     *
+     * @param <RowType>  RowType
+     * @param queryId    查询的ID
      * @param parameters 参数
      * @return 查到对的数据, 对象数组的List
      */
     protected <RowType> List<RowType> findByNamedQuery(final String queryId, final Map<String, Object> parameters) {
-        return this.hibernateTemplate.execute(new HibernateCallback<List<RowType>>()
-        {
-
-            @Override
-            public List<RowType> doInHibernate(Session session) throws HibernateException, SQLException {
-                Query query = queryBuilder.getQuery(session, queryId, parameters);
-                if (query != null) {
-                    return query.list();
-                }
-                return Collections.EMPTY_LIST;
-            }
-
-        });
+        Query query = queryBuilder.getQuery(sessionFactory.getCurrentSession(), queryId, parameters);
+        if (query != null) {
+            return query.list();
+        }
+        return Collections.EMPTY_LIST;
     }
+
 
     /**
      * 通过指定的查询的ID的QL进行查询
      *
-     * @param queryId 查询的ID
-     * @param parameters 参数
+     * @param queryId     查询的ID
+     * @param parameters  参数
      * @param targetClass 行数据映射
-     * @param <RowType> 行数据类型
+     * @param <RowType>   行数据类型
      * @return 行数据
      */
     protected <RowType> List<RowType> findByNamedQuery(String queryId, Object parameters, Class<RowType> targetClass) {
         if (parameters instanceof Map) {
-            return findByNamedQuery(queryId, (Map<String, Object>)parameters, targetClass);
-        }
-        else {
+            return findByNamedQuery(queryId, (Map<String, Object>) parameters, targetClass);
+        } else {
             Map<String, Object> paramMap = BeanTools.getProperties(parameters);
             return findByNamedQuery(queryId, paramMap, targetClass);
         }
@@ -354,28 +341,26 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * 通过指定的查询的ID的QL进行查询
      *
-     * @param queryId 查询的ID
-     * @param parameters 参数
+     * @param queryId     查询的ID
+     * @param parameters  参数
      * @param targetClass 行数据映射
-     * @param <RowType> 行数据类型
+     * @param <RowType>   行数据类型
      * @return 行数据
      */
     protected <RowType> List<RowType> findByNamedQuery(String queryId, Map<String, Object> parameters,
-            Class<RowType> targetClass) {
+                                                       Class<RowType> targetClass) {
 
         List<Object> rows = findByNamedQuery(queryId, parameters);
         List<RowType> results = new ArrayList<RowType>();
         if (!CollectionTools.isNullOrEmpty(rows)) {
             for (Object row : rows) {
                 if (DomainTools.isEntity(targetClass)) {
-                    results.add((RowType)row);
-                }
-                else {
+                    results.add((RowType) row);
+                } else {
                     if (isPrimitiveType(targetClass)) {
-                        results.add((RowType)getPrimitiveObject(row));
-                    }
-                    else {
-                        results.add(convertMapToBean((Map<?, ?>)row, targetClass));
+                        results.add((RowType) getPrimitiveObject(row));
+                    } else {
+                        results.add(convertMapToBean((Map<?, ?>) row, targetClass));
                     }
                 }
             }
@@ -384,7 +369,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     }
 
     /**
-     * @param row 行
+     * @param row       行
      * @param <RowType> 行
      * @return rowtype
      */
@@ -392,13 +377,12 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         RowType rowObj;
         if (row instanceof Map) {
             // Map
-            Map<Object, Object> countResult = (Map<Object, Object>)row;
+            Map<Object, Object> countResult = (Map<Object, Object>) row;
             Object key = countResult.keySet().iterator().next();
-            rowObj = (RowType)countResult.get(key);
-        }
-        else {
+            rowObj = (RowType) countResult.get(key);
+        } else {
             // Object
-            rowObj = (RowType)row;
+            rowObj = (RowType) row;
         }
         return rowObj;
     }
@@ -406,20 +390,19 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * 处理通用的跨Domain等复杂查询,分页
      *
-     * @param <RowType> RowType
-     * @param queryId 查询的ID
-     * @param counterId 计算分页总件数的查询
+     * @param <RowType>  RowType
+     * @param queryId    查询的ID
+     * @param counterId  计算分页总件数的查询
      * @param parameters 参数对象
      * @param firstIndex 翻页的第一条数据
-     * @param maxResult 本页取多少条
+     * @param maxResult  本页取多少条
      * @return 查询结果, 分页数据
      */
     protected <RowType> QueryResult<RowType> findByNamedQuery(String queryId, String counterId, Object parameters,
                                                               int firstIndex, int maxResult) {
         if (parameters instanceof Map) {
-            return findByNamedQuery(queryId, counterId, (Map<String, Object>)parameters, firstIndex, maxResult);
-        }
-        else {
+            return findByNamedQuery(queryId, counterId, (Map<String, Object>) parameters, firstIndex, maxResult);
+        } else {
             Map<String, Object> paramMap = BeanTools.getProperties(parameters);
             return findByNamedQuery(queryId, counterId, paramMap, firstIndex, maxResult);
         }
@@ -428,69 +411,60 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * 处理通用的跨Domain等复杂查询,分页
      *
-     * @param <RowType> RowType
-     * @param queryId 查询的ID
-     * @param counterId 计算分页总件数的查询
+     * @param <RowType>  RowType
+     * @param queryId    查询的ID
+     * @param counterId  计算分页总件数的查询
      * @param parameters 参数
      * @param firstIndex 翻页的第一条数据
-     * @param maxResult 本页取多少条
+     * @param maxResult  本页取多少条
      * @return 查询结果, 分页数据
      */
     protected <RowType> QueryResult<RowType> findByNamedQuery(final String queryId, final String counterId,
-            final Map<String, Object> parameters, final int firstIndex, final int maxResult) {
-        return hibernateTemplate.execute(new HibernateCallback<QueryResult<RowType>>()
-        {
+                                                              final Map<String, Object> parameters, final int firstIndex, final int maxResult) {
 
-            @Override
-            public QueryResult<RowType> doInHibernate(Session session) throws HibernateException, SQLException {
-                Query query = queryBuilder.getQuery(session, queryId, parameters);
-                Query counter = queryBuilder.getQuery(session, counterId, parameters);
-                if (query != null && counter != null) {
-                    query.setFirstResult(firstIndex);
-                    query.setMaxResults(maxResult);
-                    List<RowType> resultList = query.list();
+        Query query = queryBuilder.getQuery(this.sessionFactory.getCurrentSession(), queryId, parameters);
+        Query counter = queryBuilder.getQuery(this.sessionFactory.getCurrentSession(), counterId, parameters);
+        if (query != null && counter != null) {
+            query.setFirstResult(firstIndex);
+            query.setMaxResults(maxResult);
+            List<RowType> resultList = query.list();
 
-                    // 取得全件数
-                    long totalRecord;
-                    Object obj = counter.uniqueResult();
-                    if (obj instanceof Map) {
-                        // Map
-                        Map<Object, Object> countResult = (Map<Object, Object>)obj;
-                        Object key = countResult.keySet().iterator().next();
-                        totalRecord = ((Number)countResult.get(key)).longValue();
-                    }
-                    else {
-                        // Object
-                        totalRecord = ((Number)obj).longValue();
-                    }
-                    return new QueryResult<RowType>(resultList, totalRecord);
-                }
-                return null;
+            // 取得全件数
+            long totalRecord;
+            Object obj = counter.uniqueResult();
+            if (obj instanceof Map) {
+                // Map
+                Map<Object, Object> countResult = (Map<Object, Object>) obj;
+                Object key = countResult.keySet().iterator().next();
+                totalRecord = ((Number) countResult.get(key)).longValue();
+            } else {
+                // Object
+                totalRecord = ((Number) obj).longValue();
             }
-
-        });
-
+            return new QueryResult<RowType>(resultList, totalRecord);
+        }
+        return null;
     }
+
 
     /**
      * 处理通用的跨Domain等复杂查询,分页
      *
-     * @param <RowType> RowType
-     * @param queryId 查询的ID
-     * @param counterId 计算分页总件数的查询
-     * @param parameters 参数对象
-     * @param firstIndex 翻页的第一条数据
-     * @param maxResult 本页取多少条
+     * @param <RowType>   RowType
+     * @param queryId     查询的ID
+     * @param counterId   计算分页总件数的查询
+     * @param parameters  参数对象
+     * @param firstIndex  翻页的第一条数据
+     * @param maxResult   本页取多少条
      * @param targetClass 类目标
      * @return 查询结果, 分页数据
      */
     protected <RowType> QueryResult<RowType> findByNamedQuery(String queryId, String counterId, Object parameters,
-            int firstIndex, int maxResult, Class<RowType> targetClass) {
+                                                              int firstIndex, int maxResult, Class<RowType> targetClass) {
         if (parameters instanceof Map) {
-            return findByNamedQuery(queryId, counterId, (Map<String, Object>)parameters, firstIndex, maxResult,
+            return findByNamedQuery(queryId, counterId, (Map<String, Object>) parameters, firstIndex, maxResult,
                     targetClass);
-        }
-        else {
+        } else {
             Map<String, Object> paramMap = BeanTools.getProperties(parameters);
             return findByNamedQuery(queryId, counterId, paramMap, firstIndex, maxResult, targetClass);
         }
@@ -499,17 +473,17 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * 处理通用的跨Domain等复杂查询,分页
      *
-     * @param <RowType> RowType
-     * @param queryId 查询的ID
-     * @param counterId 计算分页总件数的查询
-     * @param parameters 参数
-     * @param firstIndex 翻页的第一条数据
-     * @param maxResult 本页取多少条
+     * @param <RowType>   RowType
+     * @param queryId     查询的ID
+     * @param counterId   计算分页总件数的查询
+     * @param parameters  参数
+     * @param firstIndex  翻页的第一条数据
+     * @param maxResult   本页取多少条
      * @param targetClass 目标class
      * @return 查询结果, 分页数据
      */
     protected <RowType> QueryResult<RowType> findByNamedQuery(String queryId, String counterId,
-            Map<String, Object> parameters, int firstIndex, int maxResult, Class<RowType> targetClass) {
+                                                              Map<String, Object> parameters, int firstIndex, int maxResult, Class<RowType> targetClass) {
         QueryResult<Object> rows = findByNamedQuery(queryId, counterId, parameters, firstIndex, maxResult);
         if (rows == null) {
             return null;
@@ -518,14 +492,12 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         List<RowType> resultList = new ArrayList<RowType>();
         for (Object row : rows.getResultlist()) {
             if (DomainTools.isEntity(targetClass)) {
-                resultList.add((RowType)row);
-            }
-            else {
+                resultList.add((RowType) row);
+            } else {
                 if (isPrimitiveType(targetClass)) {
-                    resultList.add((RowType)getPrimitiveObject(row));
-                }
-                else {
-                    resultList.add(convertMapToBean((Map<?, ?>)row, targetClass));
+                    resultList.add((RowType) getPrimitiveObject(row));
+                } else {
+                    resultList.add(convertMapToBean((Map<?, ?>) row, targetClass));
                 }
             }
         }
@@ -536,16 +508,16 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * 把Map映射到targetClass的对象
      *
-     * @param map 数据
+     * @param map         数据
      * @param targetClass 对象
-     * @param <RowType> 类型
+     * @param <RowType>   类型
      * @return 指定类型的对象
      */
     public static <RowType> RowType convertMapToBean(Map<?, ?> map, Class<RowType> targetClass) {
         try {
             RowType rowObj = targetClass.newInstance();
             for (Map.Entry<?, ?> entry : map.entrySet()) {
-                String propertyName = (String)entry.getKey();
+                String propertyName = (String) entry.getKey();
                 if (propertyName.contains("_") || Character.isUpperCase(propertyName.charAt(0))) {
                     propertyName = StringTools.camelCase(propertyName);
                 }
@@ -556,11 +528,9 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
                 }
             }
             return rowObj;
-        }
-        catch (InstantiationException e) {
+        } catch (InstantiationException e) {
             LOG.error(e.getMessage(), e);
-        }
-        catch (IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             LOG.error(e.getMessage(), e);
         }
         return null;

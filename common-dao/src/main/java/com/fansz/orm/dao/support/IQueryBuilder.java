@@ -14,7 +14,6 @@ public interface IQueryBuilder {
     /**
      * 根据指定的查询ID和参数来创建Query对象
      *
-     * @param entityManager EntityManager
      * @param queryId 查询ID
      * @param parameters 参数
      * @return Query对象

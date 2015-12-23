@@ -1,12 +1,11 @@
 package com.fansz.orm.dao;
 
+import com.fansz.orm.dao.support.IQueryBuilder;
+import org.hibernate.SessionFactory;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.orm.hibernate3.HibernateTemplate;
-
-import com.fansz.orm.dao.support.IQueryBuilder;
 
 /**
  * 基础DAO
@@ -15,14 +14,14 @@ import com.fansz.orm.dao.support.IQueryBuilder;
  */
 public interface IBaseDAO<T> {
     /**
-     * @param hibernateTemplate 实体管理器
+     * @param sessionFactory 实体管理器
      */
-    void setHibernateTemplate(HibernateTemplate hibernateTemplate);
+    void setSessionFactory(SessionFactory sessionFactory);
 
     /**
      * @return HibernateTemplate
      */
-    HibernateTemplate getHibernateTemplate();
+    SessionFactory getSessionFactory();
 
     /**
      * 获取查询构造器.
