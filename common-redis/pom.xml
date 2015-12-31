@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.fansz</groupId>
         <artifactId>common-components</artifactId>
-        <version>1.0.6</version>
+        <version>1.0.7</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>common-redis</artifactId>
@@ -37,6 +37,10 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fansz</groupId>
+            <artifactId>common-utils</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>

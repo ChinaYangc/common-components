@@ -5,7 +5,7 @@
     <parent>
         <artifactId>common-components</artifactId>
         <groupId>com.fansz</groupId>
-        <version>1.0.6</version>
+        <version>1.0.7</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>common-dao</artifactId>
@@ -44,8 +44,8 @@
             <artifactId>hibernate-ehcache</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.javax.persistence</groupId>
-            <artifactId>hibernate-jpa-2.0-api</artifactId>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-annotations</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -100,6 +100,5 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.test.skip>true</maven.test.skip>
         <maven.test.failure.ignore>true</maven.test.failure.ignore>
-        <common.version>1.0.6</common.version>
     </properties>
 </project>

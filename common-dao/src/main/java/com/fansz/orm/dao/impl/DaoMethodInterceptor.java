@@ -2,9 +2,9 @@ package com.fansz.orm.dao.impl;
 
 import com.fansz.orm.dao.annotation.NamedExec;
 import com.fansz.orm.dao.annotation.NamedQuery;
-import com.fansz.orm.dao.support.Page;
-import com.fansz.orm.dao.support.QueryResult;
 import com.fansz.pub.exception.FrameworkException;
+import com.fansz.pub.model.Page;
+import com.fansz.pub.model.QueryResult;
 import com.fansz.pub.utils.BeanTools;
 import com.fansz.pub.utils.GenericTools;
 import com.fansz.pub.utils.TypeTools;

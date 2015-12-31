@@ -2,6 +2,7 @@ package com.fansz.orm.dao;
 
 import com.fansz.orm.dao.support.IQueryBuilder;
 import org.hibernate.SessionFactory;
+import org.springframework.orm.hibernate3.HibernateTemplate;
 
 import java.io.Serializable;
 import java.util.List;
@@ -9,30 +10,36 @@ import java.util.Map;
 
 /**
  * 基础DAO
- * 
+ *
+ * @param <T> 泛型
+ */
+
+/**
+ * 基础DAO
+ *
  * @param <T> 泛型
  */
 public interface IBaseDAO<T> {
     /**
-     * @param sessionFactory 实体管理器
+     * @param hibernateTemplate 实体管理器
      */
-    void setSessionFactory(SessionFactory sessionFactory);
+    void setHibernateTemplate(HibernateTemplate hibernateTemplate);
 
     /**
      * @return HibernateTemplate
      */
-    SessionFactory getSessionFactory();
+    HibernateTemplate getHibernateTemplate();
 
     /**
      * 获取查询构造器.
-     * 
+     *
      * @return IQueryBuilder
      */
     IQueryBuilder getQueryBuilder();
 
     /**
      * 设置查询构造器.
-     * 
+     *
      * @param queryBuilder 查询构造器
      */
     void setQueryBuilder(IQueryBuilder queryBuilder);
@@ -87,7 +94,7 @@ public interface IBaseDAO<T> {
 
     /**
      * 一次查出所有记录.
-     * 
+     *
      * @return 实体对象集合
      */
     List<T> findAll();

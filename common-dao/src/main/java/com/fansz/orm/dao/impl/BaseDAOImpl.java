@@ -19,7 +19,7 @@ import javax.persistence.EntityNotFoundException;
 
 import com.fansz.orm.dao.IBaseDAO;
 import com.fansz.orm.dao.support.IQueryBuilder;
-import com.fansz.orm.dao.support.QueryResult;
+import com.fansz.pub.model.QueryResult;
 import com.fansz.pub.utils.DomainTools;
 import com.fansz.pub.utils.GenericTools;
 import com.fansz.pub.utils.StringTools;
@@ -27,7 +27,6 @@ import com.fansz.pub.utils.TypeTools;
 import org.hibernate.HibernateException;
 import org.hibernate.Query;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.hibernate.criterion.DetachedCriteria;
 import org.hibernate.criterion.Property;
 import org.slf4j.Logger;
@@ -56,8 +55,8 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
     /**
      * HibernateTemplate实例, 一般由Spring注入
      */
-    @Resource(name = "sessionFactory")
-    protected SessionFactory sessionFactory;
+    @Resource(name = "hibernateTemplate")
+    protected HibernateTemplate hibernateTemplate;
 
     /**
      * 自动创建Query的工具
@@ -80,12 +79,12 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         this.entityClass = entityClass;
     }
 
-    public void setSessionFactory(SessionFactory sessionFactory) {
-        this.sessionFactory = sessionFactory;
+    public void setHibernateTemplate(HibernateTemplate hibernateTemplate) {
+        this.hibernateTemplate = hibernateTemplate;
     }
 
-    public SessionFactory getSessionFactory() {
-        return sessionFactory;
+    public HibernateTemplate getHibernateTemplate() {
+        return hibernateTemplate;
     }
 
     public IQueryBuilder getQueryBuilder() {
@@ -100,14 +99,14 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
      * 清楚
      */
     public void clear() {
-        sessionFactory.getCurrentSession().clear();
+        hibernateTemplate.clear();
     }
 
     /**
      * flush
      */
     public void flush() {
-        sessionFactory.getCurrentSession().flush();
+        hibernateTemplate.flush();
     }
 
     /**
@@ -121,7 +120,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
                 // 如果找不到实体的话就不用删除了
                 try {
                     if (id.getClass().getAnnotation(Entity.class) != null) {
-                        sessionFactory.getCurrentSession().delete(id);
+                        hibernateTemplate.delete(id);
                     }
                 } catch (EntityNotFoundException ex) {
                     LOG.warn(ex.getMessage(), ex);
@@ -137,16 +136,10 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
      * @param wherejpql   jpql 条件
      * @param queryParams jpql 条件
      */
-    protected int deleteByCriteria(String wherejpql, Object[] queryParams) {
+    protected void deleteByCriteria(String wherejpql, Object[] queryParams) {
         String entityname = getEntityName(this.entityClass);
         String hql = "delete from " + entityname + " o " + (StringTools.isBlank(wherejpql) ? "" : "where " + wherejpql);
-        Query queryObj = this.sessionFactory.getCurrentSession().createQuery(hql);
-        if (queryParams != null) {
-            for (int i = 0; i < queryParams.length; i++) {
-                queryObj.setParameter(i, queryParams[i]);
-            }
-        }
-        return Integer.valueOf(queryObj.executeUpdate());
+        this.hibernateTemplate.bulkUpdate(hql, queryParams);
     }
 
     /**
@@ -159,7 +152,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         if (entityId == null) {
             throw new IllegalArgumentException(this.entityClass.getName() + ":传入的实体id不能为空");
         }
-        return (T) this.sessionFactory.getCurrentSession().get(this.entityClass, entityId);
+        return this.hibernateTemplate.load(this.entityClass, entityId);
     }
 
     /**
@@ -168,13 +161,13 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
      * @param entity 实体
      */
     public void save(T entity) {
-        sessionFactory.getCurrentSession().saveOrUpdate(entity);
+        hibernateTemplate.saveOrUpdate(entity);
     }
 
     public long getCount() {
-        Query query = sessionFactory.getCurrentSession().createSQLQuery(
-                "select count(" + getCountField(this.entityClass) + ") from " + getEntityName(this.entityClass) + " o");
-        return ((Integer) query.uniqueResult()).longValue();
+        return (Long) hibernateTemplate.find(
+                "select count(" + getCountField(this.entityClass) + ") from " + getEntityName(this.entityClass) + " o")
+                .get(0);
     }
 
     /**
@@ -183,7 +176,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
      * @param entity 实体
      */
     public void update(T entity) {
-        sessionFactory.getCurrentSession().update(entity);
+        hibernateTemplate.update(entity);
     }
 
     /**
@@ -194,11 +187,19 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
      * @return 更新的记录数
      */
     protected int executeUpdate(final String queryId, final Map<String, Object> parameters) {
-        Query query = queryBuilder.getQuery(sessionFactory.getCurrentSession(), queryId, parameters);
-        if (query != null) {
-            return query.executeUpdate();
-        }
-        return 0;
+        return this.hibernateTemplate.execute(new HibernateCallback<Integer>() {
+
+            @Override
+            public Integer doInHibernate(Session session) throws HibernateException, SQLException {
+                Query query = queryBuilder.getQuery(session, queryId, parameters);
+                if (query != null) {
+                    return query.executeUpdate();
+                }
+                return 0;
+            }
+
+        });
+
     }
 
     /**
@@ -221,7 +222,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         for (Map.Entry<String, Object> entry : parameters.entrySet()) {
             criteria.add(Property.forName(entry.getKey()).eq(entry.getValue()));
         }
-        return criteria.getExecutableCriteria(sessionFactory.getCurrentSession()).list();
+        return hibernateTemplate.findByCriteria(criteria);
     }
 
     @Override
@@ -312,13 +313,19 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
      * @return 查到对的数据, 对象数组的List
      */
     protected <RowType> List<RowType> findByNamedQuery(final String queryId, final Map<String, Object> parameters) {
-        Query query = queryBuilder.getQuery(sessionFactory.getCurrentSession(), queryId, parameters);
-        if (query != null) {
-            return query.list();
-        }
-        return Collections.EMPTY_LIST;
-    }
+        return this.hibernateTemplate.execute(new HibernateCallback<List<RowType>>() {
 
+            @Override
+            public List<RowType> doInHibernate(Session session) throws HibernateException, SQLException {
+                Query query = queryBuilder.getQuery(session, queryId, parameters);
+                if (query != null) {
+                    return query.list();
+                }
+                return Collections.EMPTY_LIST;
+            }
+
+        });
+    }
 
     /**
      * 通过指定的查询的ID的QL进行查询
@@ -354,14 +361,12 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         List<RowType> results = new ArrayList<RowType>();
         if (!CollectionTools.isNullOrEmpty(rows)) {
             for (Object row : rows) {
-                if (DomainTools.isEntity(targetClass)) {
-                    results.add((RowType) row);
+                if (row instanceof Map) {
+                    results.add(convertMapToBean((Map<?, ?>) row, targetClass));
+                } else if (isPrimitiveType(targetClass)) {
+                    results.add((RowType) getPrimitiveObject(row));
                 } else {
-                    if (isPrimitiveType(targetClass)) {
-                        results.add((RowType) getPrimitiveObject(row));
-                    } else {
-                        results.add(convertMapToBean((Map<?, ?>) row, targetClass));
-                    }
+                    results.add((RowType)row);
                 }
             }
         }
@@ -421,31 +426,37 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
      */
     protected <RowType> QueryResult<RowType> findByNamedQuery(final String queryId, final String counterId,
                                                               final Map<String, Object> parameters, final int firstIndex, final int maxResult) {
+        return hibernateTemplate.execute(new HibernateCallback<QueryResult<RowType>>() {
 
-        Query query = queryBuilder.getQuery(this.sessionFactory.getCurrentSession(), queryId, parameters);
-        Query counter = queryBuilder.getQuery(this.sessionFactory.getCurrentSession(), counterId, parameters);
-        if (query != null && counter != null) {
-            query.setFirstResult(firstIndex);
-            query.setMaxResults(maxResult);
-            List<RowType> resultList = query.list();
+            @Override
+            public QueryResult<RowType> doInHibernate(Session session) throws HibernateException, SQLException {
+                Query query = queryBuilder.getQuery(session, queryId, parameters);
+                Query counter = queryBuilder.getQuery(session, counterId, parameters);
+                if (query != null && counter != null) {
+                    query.setFirstResult(firstIndex);
+                    query.setMaxResults(maxResult);
+                    List<RowType> resultList = query.list();
 
-            // 取得全件数
-            long totalRecord;
-            Object obj = counter.uniqueResult();
-            if (obj instanceof Map) {
-                // Map
-                Map<Object, Object> countResult = (Map<Object, Object>) obj;
-                Object key = countResult.keySet().iterator().next();
-                totalRecord = ((Number) countResult.get(key)).longValue();
-            } else {
-                // Object
-                totalRecord = ((Number) obj).longValue();
+                    // 取得全件数
+                    long totalRecord;
+                    Object obj = counter.uniqueResult();
+                    if (obj instanceof Map) {
+                        // Map
+                        Map<Object, Object> countResult = (Map<Object, Object>) obj;
+                        Object key = countResult.keySet().iterator().next();
+                        totalRecord = ((Number) countResult.get(key)).longValue();
+                    } else {
+                        // Object
+                        totalRecord = ((Number) obj).longValue();
+                    }
+                    return new QueryResult<RowType>(resultList, totalRecord);
+                }
+                return null;
             }
-            return new QueryResult<RowType>(resultList, totalRecord);
-        }
-        return null;
-    }
 
+        });
+
+    }
 
     /**
      * 处理通用的跨Domain等复杂查询,分页

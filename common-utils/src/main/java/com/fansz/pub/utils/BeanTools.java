@@ -187,7 +187,9 @@ public final class BeanTools {
             if (clz.getSuperclass() != null) {
                 f = findField(clz.getSuperclass(), fieldName);
             }
-            LOG.warn(String.format("field (%s) not exists", fieldName), e);
+            if (f == null) {
+                LOG.error(String.format("field (%s) not exists", fieldName), e);
+            }
         }
         return f;
     }

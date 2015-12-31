@@ -14,6 +14,6 @@ import org.hibernate.type.TextType;
 public class BlobMySQLDialect extends MySQLDialect {
     public BlobMySQLDialect() {
         super();
-        registerHibernateType(Types.LONGVARCHAR, TextType.INSTANCE.getName());
+        registerHibernateType(Types.LONGVARCHAR, Hibernate.TEXT.getName());
     }
 }

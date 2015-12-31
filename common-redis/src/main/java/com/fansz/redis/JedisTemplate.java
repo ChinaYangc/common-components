@@ -35,11 +35,14 @@ public class JedisTemplate implements JedisOperations {
             return redisCallback.doInRedis(jedis);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeException(e);
+            }
         } finally {
             returnResource(jedis);
         }
-        return null;
     }
 
     public JedisSentinelPool getJedisPool() {

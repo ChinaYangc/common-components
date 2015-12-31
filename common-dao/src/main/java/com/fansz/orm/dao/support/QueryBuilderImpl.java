@@ -78,7 +78,7 @@ public class QueryBuilderImpl implements IQueryBuilder {
     /**
      * 创建Query对象
      *
-     * @param entityManager EntityManager
+     * @param session session
      * @param queryId 查询标识
      * @param parameters 参数
      * @param queryBean QueryBean

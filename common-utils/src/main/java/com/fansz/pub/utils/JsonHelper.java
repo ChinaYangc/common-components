@@ -16,6 +16,12 @@ public class JsonHelper {
 
     private Logger logger = LoggerFactory.getLogger(JsonHelper.class);
 
+
+    public static <T> T copyAs(Map<String, Object> params, Class<T> cls) {
+        String json = convertObject2JSONString(params);
+        return convertJSONString2Object(json, cls);
+    }
+
     /**
      * 将对象转换为json字符串.
      *
@@ -29,9 +35,10 @@ public class JsonHelper {
 
     /**
      * 通过指定序列化参数，将对象转换为json字符串
-     * @param obj 被转换的对象
+     *
+     * @param obj      被转换的对象
      * @param features 序列化参数
-     * @param <T> 类型参数
+     * @param <T>      类型参数
      * @return json字符串
      */
     public static <T> String convert2FormatJSONString(T obj, SerializerFeature... features) {
@@ -42,9 +49,9 @@ public class JsonHelper {
      * 将json串转换为类型为className的对象.
      * 处理如下json：{'field1':1,'field2':'a'}
      *
-     * @param <T> 类型参数
+     * @param <T>        类型参数
      * @param jsonString json字符串
-     * @param className 对象的Class类型对象
+     * @param className  对象的Class类型对象
      * @return 对象
      */
     public static <T> T convertJSONString2Object(String jsonString, Class<T> className) {
@@ -55,9 +62,9 @@ public class JsonHelper {
      * 将json串转换为类型为className的对象集合.
      * 处理如下json：[{'field1':1,'field2':'a'},{'field1':2,'field2':'b'}]
      *
-     * @param <T> 类型参数
+     * @param <T>        类型参数
      * @param jsonString json字符串
-     * @param className Class类型对象
+     * @param className  Class类型对象
      * @return 转换成的list
      */
     public static <T> List<T> convertJSONString2Collection(String jsonString, Class<T> className) {

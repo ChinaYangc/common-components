@@ -1,4 +1,4 @@
-package com.fansz.orm.dao.support;
+package com.fansz.pub.model;
 
 import java.util.List;
 
