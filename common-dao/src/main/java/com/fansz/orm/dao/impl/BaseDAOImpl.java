@@ -118,14 +118,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         if (entityids != null) {
             for (Object id : entityids) {
                 // 如果找不到实体的话就不用删除了
-                try {
-                    if (id.getClass().getAnnotation(Entity.class) != null) {
-                        hibernateTemplate.delete(id);
-                    }
-                } catch (EntityNotFoundException ex) {
-                    LOG.warn(ex.getMessage(), ex);
-                }
-
+                hibernateTemplate.delete(id);
             }
         }
     }
@@ -366,7 +359,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
                 } else if (isPrimitiveType(targetClass)) {
                     results.add((RowType) getPrimitiveObject(row));
                 } else {
-                    results.add((RowType)row);
+                    results.add((RowType) row);
                 }
             }
         }
