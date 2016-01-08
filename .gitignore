@@ -1,11 +1,12 @@
-/fansz-utils/target
-/common-dao/target
+/commons-utils/target
+/commons-dao/target
+/commons-event/target
+/commons-provider/target
+/http-server/target
 target/*
 !.gitignore
 /.idea
 *.iml
 .DS_Store
-
-/common-utils/target
-/common-redis/target
+/commons-redis/target
 

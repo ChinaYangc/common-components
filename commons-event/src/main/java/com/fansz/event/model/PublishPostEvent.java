@@ -16,6 +16,10 @@ public class PublishPostEvent implements Serializable {
 
     private String memberSn;
 
+    private String postTitle;
+
+    private String postContent;
+
     private Date postTime;
 
     private InformationSource source;
@@ -31,17 +35,19 @@ public class PublishPostEvent implements Serializable {
         this.source = InformationSource.FANDOM;
     }
 
-    public PublishPostEvent(Long postId, String memberSn, Date postTime) {
+    public PublishPostEvent(Long postId, String memberSn, Date postTime, String postTitle, String postContent) {
         this.postId = postId;
         this.memberSn = memberSn;
         this.postTime = postTime;
+        this.postTitle = postTitle;
+        this.postContent = postContent;
         this.source = InformationSource.FANDOM;
     }
 
     public PublishPostEvent(Long postId, String memberSn, Date postTime, InformationSource source) {
         this.postId = postId;
         this.memberSn = memberSn;
-        this.postTime=postTime;
+        this.postTime = postTime;
         this.source = source;
     }
 
@@ -67,5 +73,29 @@ public class PublishPostEvent implements Serializable {
 
     public void setSource(InformationSource source) {
         this.source = source;
+    }
+
+    public String getPostTitle() {
+        return postTitle;
+    }
+
+    public void setPostTitle(String postTitle) {
+        this.postTitle = postTitle;
+    }
+
+    public String getPostContent() {
+        return postContent;
+    }
+
+    public void setPostContent(String postContent) {
+        this.postContent = postContent;
+    }
+
+    public Date getPostTime() {
+        return postTime;
+    }
+
+    public void setPostTime(Date postTime) {
+        this.postTime = postTime;
     }
 }
