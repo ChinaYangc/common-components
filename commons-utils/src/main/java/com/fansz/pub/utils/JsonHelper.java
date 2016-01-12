@@ -21,7 +21,10 @@ public class JsonHelper {
         String json = convertObject2JSONString(params);
         return convertJSONString2Object(json, cls);
     }
-
+    public static <T> T copyMapAs(Map<String, String> params, Class<T> cls) {
+        String json = convertObject2JSONString(params);
+        return convertJSONString2Object(json, cls);
+    }
     /**
      * 将对象转换为json字符串.
      *

@@ -19,6 +19,7 @@
         <module>commons-provider</module>
         <module>commons-event</module>
         <module>http-server</module>
+        <module>commons-apns</module>
     </modules>
     <distributionManagement>
         <repository>

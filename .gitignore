@@ -4,6 +4,7 @@
 /commons-provider/target
 /http-server/target
 target/*
+/commons-apns/target
 !.gitignore
 /.idea
 *.iml

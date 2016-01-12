@@ -8,7 +8,7 @@ import java.util.*;
 /**
  * 时间工具类
  *
- * @author Administrator
+ * @author allan
  */
 public final class DateTools {
     /**
