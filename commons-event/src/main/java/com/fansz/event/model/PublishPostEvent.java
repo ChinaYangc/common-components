@@ -1,6 +1,7 @@
 package com.fansz.event.model;
 
 import com.fansz.pub.constant.InformationSource;
+import com.fansz.pub.constant.PostType;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -22,10 +23,13 @@ public class PublishPostEvent implements Serializable {
 
     private Date postTime;
 
+    private PostType postType;
+
     private InformationSource source;
 
     public PublishPostEvent() {
         this.source = InformationSource.FANDOM;
+        this.postType = PostType.POST;
     }
 
     public PublishPostEvent(Long postId, String memberSn) {
@@ -33,14 +37,16 @@ public class PublishPostEvent implements Serializable {
         this.memberSn = memberSn;
         this.postTime = new Date();
         this.source = InformationSource.FANDOM;
+        this.postType = PostType.POST;
     }
 
-    public PublishPostEvent(Long postId, String memberSn, Date postTime, String postTitle, String postContent) {
+    public PublishPostEvent(Long postId, String memberSn, Date postTime, String postTitle, String postContent, PostType postType) {
         this.postId = postId;
         this.memberSn = memberSn;
         this.postTime = postTime;
         this.postTitle = postTitle;
         this.postContent = postContent;
+        this.postType = postType;
         this.source = InformationSource.FANDOM;
     }
 
@@ -97,5 +103,13 @@ public class PublishPostEvent implements Serializable {
 
     public void setPostTime(Date postTime) {
         this.postTime = postTime;
+    }
+
+    public PostType getPostType() {
+        return postType;
+    }
+
+    public void setPostType(PostType postType) {
+        this.postType = postType;
     }
 }

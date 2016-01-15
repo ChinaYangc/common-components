@@ -5,7 +5,7 @@ package com.fansz.event.type;
  */
 public enum AsyncEventType {
 
-    PUBLISH_POST("01", "POST"), SEND_SMS("02", "SMS"), SPECIAL_FOCUS("03", "FOCUS"), UN_SPECIAL_FOCUS("04", "FOCUS");
+    PUBLISH_POST("01", "POST"), SEND_SMS("02", "SMS"), ADD_COMMENT("03", "COMMENT"), ADD_LIKE("04", "LIKE");
 
     private String code;
 

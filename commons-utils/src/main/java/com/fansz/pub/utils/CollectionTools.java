@@ -2,6 +2,7 @@ package com.fansz.pub.utils;
 
 import org.apache.commons.beanutils.BeanPropertyValueEqualsPredicate;
 import org.apache.commons.beanutils.BeanToPropertyValueTransformer;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.Transformer;
 import org.apache.commons.collections.functors.AllPredicate;
@@ -23,8 +24,8 @@ public final class CollectionTools {
      * 判断集合是否为空
      *
      * @param collection 集合类型的对象
-     * @param <T> 类型参数
-     * @return 如果集合对象为空或者集合的size为0就返回true,否则返回false
+     * @param <T>        类型参数
+     * @return 如果集合对象为空或者集合的size为0就返回true, 否则返回false
      */
     public static <T> boolean isNullOrEmpty(Collection<T> collection) {
         return collection == null || collection.isEmpty();
@@ -34,8 +35,8 @@ public final class CollectionTools {
      * 判断是否为一个非空的数组
      *
      * @param array 传入的数组
-     * @param <T> 数组的类型参数
-     * @return 如果数组为null或者数组的长度为0就返回true,否则返回false
+     * @param <T>   数组的类型参数
+     * @return 如果数组为null或者数组的长度为0就返回true, 否则返回false
      */
     public static <T> boolean isNotNullOrEmptyArray(T[] array) {
         return !(array == null || array.length == 0);
@@ -45,7 +46,7 @@ public final class CollectionTools {
      * 合并所有集合
      *
      * @param lists List类型的集合
-     * @param <T> 集合的参数类型
+     * @param <T>   集合的参数类型
      * @return 合并后的集合
      */
     public static <T> List<T> mergeAll(List<T>... lists) {
@@ -68,7 +69,7 @@ public final class CollectionTools {
      * 用数组创建一个ArrayList
      *
      * @param objs 元素
-     * @param <T> 元素的类型
+     * @param <T>  元素的类型
      * @return ArrayList
      */
     public static <T> List<T> asList(T... objs) {
@@ -83,10 +84,10 @@ public final class CollectionTools {
     /**
      * 创建简单Map的快捷方法
      *
-     * @param key 键
+     * @param key   键
      * @param value 值
-     * @param <K> 键的类型
-     * @param <V> 值的类型
+     * @param <K>   键的类型
+     * @param <V>   值的类型
      * @return Map
      */
     public static <K, V> Map<K, V> makeMap(K key, V value) {
@@ -94,8 +95,10 @@ public final class CollectionTools {
         map.put(key, value);
         return map;
     }
+
     /**
      * 返回JSON结果
+     *
      * @param value
      * @return
      */
@@ -109,12 +112,12 @@ public final class CollectionTools {
     /**
      * 创建简单Map的快捷方法
      *
-     * @param key1 键1
+     * @param key1   键1
      * @param value1 值1
-     * @param key2 键2
+     * @param key2   键2
      * @param value2 值2
-     * @param <K> 键的类型
-     * @param <V> 值的类型
+     * @param <K>    键的类型
+     * @param <V>    值的类型
      * @return Map
      */
     public static <K, V> Map<K, V> makeMap(K key1, V value1, K key2, V value2) {
@@ -128,8 +131,8 @@ public final class CollectionTools {
      * 数组包含
      *
      * @param array 数组
-     * @param val 被包含值
-     * @param <T> 类型
+     * @param val   被包含值
+     * @param <T>   类型
      * @return 是否包含
      */
     public static <T> boolean contains(T[] array, T val) {
@@ -144,7 +147,7 @@ public final class CollectionTools {
     /**
      * 用分隔符将字符串数组连接起来，构成一个字符串
      *
-     * @param words 字符串数组
+     * @param words     字符串数组
      * @param seperator 分隔符
      * @return 返回用分隔符连起来的字符串
      */
@@ -163,9 +166,9 @@ public final class CollectionTools {
 
     /**
      * 将集合中的元素用分隔符连起来，构成一个字符串
-     * 
+     *
      * @param collection 集合
-     * @param seperator 分隔符
+     * @param seperator  分隔符
      * @return 返回用分隔符连起来的字符串
      */
     public static String join(Collection<?> collection, String seperator) {
@@ -177,24 +180,24 @@ public final class CollectionTools {
     /**
      * 根据集合中对象属性值查找元素
      *
-     * @param collection 给定的集合
-     * @param propertyName 集合中的元素的属性名
+     * @param collection    给定的集合
+     * @param propertyName  集合中的元素的属性名
      * @param propertyValue 集合中元素属性名对应的属性值
-     * @param <T> 集合的类型参数
+     * @param <T>           集合的类型参数
      * @return 返回匹配的第一个元素
      */
     @SuppressWarnings("unchecked")
     public static <T> T find(Collection<T> collection, String propertyName, Object propertyValue) {
-        return (T)org.apache.commons.collections.CollectionUtils.find(collection, new BeanPropertyValueEqualsPredicate(
+        return (T) org.apache.commons.collections.CollectionUtils.find(collection, new BeanPropertyValueEqualsPredicate(
                 propertyName, propertyValue));
     }
 
     /**
      * 根据集合中对象属性值查找（多个属性值）
      *
-     * @param collection 给定的集合
+     * @param collection       给定的集合
      * @param propertyValueMap 属性名称-值 map
-     * @param <T> 集合的类型参数
+     * @param <T>              集合的类型参数
      * @return 匹配的第一个元素
      */
     @SuppressWarnings("unchecked")
@@ -207,16 +210,16 @@ public final class CollectionTools {
             index++;
         }
         Predicate allPredicate = new AllPredicate(predicates);
-        return (T)org.apache.commons.collections.CollectionUtils.find(collection, allPredicate);
+        return (T) org.apache.commons.collections.CollectionUtils.find(collection, allPredicate);
     }
 
     /**
      * 返回由指定属性名字的值构成的ArrayList集合 在集合中取每一个对象，将对象指定属性名的值拿出来，重新构成一个ArrayList
      *
-     * @param collection 给定的集合
+     * @param collection   给定的集合
      * @param propertyName 集合中元素的某一个属性名
-     * @param <T> 给定集合的类型参数
-     * @param <PropType> 属性的类型
+     * @param <T>          给定集合的类型参数
+     * @param <PropType>   属性的类型
      * @return 返回新的集合ArrayList
      */
     public static <T, PropType> Collection<PropType> collect(Collection<T> collection, String propertyName) {
@@ -229,7 +232,7 @@ public final class CollectionTools {
      * 复制一个数组
      *
      * @param sourceArray 要复制的目标数组
-     * @param <T> 要复制的数组泛型类型
+     * @param <T>         要复制的数组泛型类型
      * @return 新的数组
      */
     public static <T> T[] copy(T[] sourceArray) {
@@ -241,7 +244,7 @@ public final class CollectionTools {
 
     /**
      * 分组函数
-     * 
+     *
      * @param colls
      * @param gb
      * @return
@@ -260,13 +263,16 @@ public final class CollectionTools {
             T t = gb.groupby(d);
             if (map.containsKey(t)) {
                 map.get(t).add(d);
-            }
-            else {
+            } else {
                 List<D> list = new ArrayList<D>();
                 list.add(d);
                 map.put(t, list);
             }
         }
         return map;
+    }
+
+    public static Collection intersection(Collection a, Collection b) {
+        return org.apache.commons.collections.CollectionUtils.intersection(a, b);
     }
 }

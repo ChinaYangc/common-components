@@ -57,6 +57,12 @@ public enum ErrorCode {
 
     LIKED_REPEATED("20304", "Liked already"),//重复点赞
 
+    VOTE_POST_NOT_EXIST("20305", "Not exist"),//投票贴不存在
+
+    VOTE_REPEATED("20306", "Vote repeated"),//重复投票
+
+    VOET_EXPIRED("20307", "Vote expired"),//超过投票截止日期
+
     NICK_NAME_REPATEDD("20401", "Nickname not unique"),//nickname重复
 
     FANDOM_NAME_REPATEDD("20402", "Fandom name not unique"),//fandom名称重复
