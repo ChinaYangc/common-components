@@ -61,7 +61,7 @@ public enum ErrorCode {
 
     VOTE_REPEATED("20306", "Vote repeated"),//重复投票
 
-    VOET_EXPIRED("20307", "Vote expired"),//超过投票截止日期
+    VOTE_EXPIRED("20307", "Vote expired"),//超过投票截止日期
 
     NICK_NAME_REPATEDD("20401", "Nickname not unique"),//nickname重复
 

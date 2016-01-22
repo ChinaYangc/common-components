@@ -1,27 +1,9 @@
 package com.fansz.orm.dao.impl;
 
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.io.Serializable;
-import java.lang.reflect.Method;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Resource;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-
 import com.fansz.orm.dao.IBaseDAO;
 import com.fansz.orm.dao.support.IQueryBuilder;
 import com.fansz.pub.model.QueryResult;
-import com.fansz.pub.utils.GenericTools;
-import com.fansz.pub.utils.StringTools;
-import com.fansz.pub.utils.TypeTools;
+import com.fansz.pub.utils.*;
 import org.hibernate.HibernateException;
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -32,8 +14,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.orm.hibernate3.HibernateCallback;
 import org.springframework.orm.hibernate3.HibernateTemplate;
 
-import com.fansz.pub.utils.BeanTools;
-import com.fansz.pub.utils.CollectionTools;
+import javax.annotation.Resource;
+import javax.persistence.EmbeddedId;
+import javax.persistence.Entity;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.sql.SQLException;
+import java.util.*;
 
 /**
  * 数据访问层的基础类, 具体的Domain相关DAO类可以继承与这个类并制定泛型参数
@@ -336,33 +325,6 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
         }
     }
 
-    /**
-     * 通过指定的查询的ID的QL进行查询
-     *
-     * @param queryId     查询的ID
-     * @param parameters  参数
-     * @param targetClass 行数据映射
-     * @param <RowType>   行数据类型
-     * @return 行数据
-     */
-    protected <RowType> List<RowType> findByNamedQuery(String queryId, Map<String, Object> parameters,
-                                                       Class<RowType> targetClass) {
-
-        List<Object> rows = findByNamedQuery(queryId, parameters);
-        List<RowType> results = new ArrayList<RowType>();
-        if (!CollectionTools.isNullOrEmpty(rows)) {
-            for (Object row : rows) {
-                if (row instanceof Map) {
-                    results.add(convertMapToBean((Map<?, ?>) row, targetClass));
-                } else if (isPrimitiveType(targetClass)) {
-                    results.add((RowType) getPrimitiveObject(row));
-                } else {
-                    results.add((RowType) row);
-                }
-            }
-        }
-        return results;
-    }
 
     /**
      * @param row       行
@@ -491,19 +453,41 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
             return null;
         }
 
-        List<RowType> resultList = new ArrayList<RowType>();
-        for (Object row : rows.getResultlist()) {
-            if (isPrimitiveType(targetClass)) {
-                resultList.add((RowType) getPrimitiveObject(row));
-            } else if (row instanceof Map) {
-                resultList.add(convertMapToBean((Map<?, ?>) row, targetClass));
-            } else {
-                resultList.add((RowType) row);
-            }
-
-        }
+        List<RowType> resultList = convertReturnType(rows.getResultlist(), targetClass);
 
         return new QueryResult<RowType>(resultList, rows.getTotalrecord());
+    }
+
+    /**
+     * 通过指定的查询的ID的QL进行查询
+     *
+     * @param queryId     查询的ID
+     * @param parameters  参数
+     * @param targetClass 行数据映射
+     * @param <RowType>   行数据类型
+     * @return 行数据
+     */
+    protected <RowType> List<RowType> findByNamedQuery(String queryId, Map<String, Object> parameters,
+                                                       Class<RowType> targetClass) {
+
+        List<Object> rows = findByNamedQuery(queryId, parameters);
+        return convertReturnType(rows, targetClass);
+    }
+
+    private <RowType> List<RowType> convertReturnType(List<Object> rows, Class<RowType> targetClass) {
+        List<RowType> results = new ArrayList<>();
+        if (!CollectionTools.isNullOrEmpty(rows)) {
+            for (Object row : rows) {
+                if (isPrimitiveType(targetClass)) {
+                    results.add((RowType) getPrimitiveObject(row));
+                } else if (row instanceof Map) {
+                    results.add(convertMapToBean((Map<?, ?>) row, targetClass));
+                } else {
+                    results.add((RowType) row);
+                }
+            }
+        }
+        return results;
     }
 
     /**
@@ -514,7 +498,7 @@ public class BaseDAOImpl<T> implements IBaseDAO<T> {
      * @param <RowType>   类型
      * @return 指定类型的对象
      */
-    public static <RowType> RowType convertMapToBean(Map<?, ?> map, Class<RowType> targetClass) {
+    private static <RowType> RowType convertMapToBean(Map<?, ?> map, Class<RowType> targetClass) {
         try {
             RowType rowObj = targetClass.newInstance();
             for (Map.Entry<?, ?> entry : map.entrySet()) {
