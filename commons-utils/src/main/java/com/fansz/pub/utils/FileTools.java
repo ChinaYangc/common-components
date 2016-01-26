@@ -4,8 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.Charset;
 
 /**
@@ -32,5 +31,30 @@ public final class FileTools {
             }
         }
         return null;
+    }
+
+    public static String readStringFromFile(String file) {
+        try {
+            return readStringFromStream(new FileInputStream(file));
+        } catch (FileNotFoundException e) {
+            logger.error(String.format("文件不存在"), e);
+        }
+        return null;
+    }
+
+    public static boolean writeString(String json, String path) {
+        OutputStream os = null;
+        try {
+            os = new FileOutputStream(path);
+            IOUtils.write(json, os, Charset.forName("utf-8"));
+            return true;
+        } catch (Exception e) {
+            logger.error(String.format("写文件时发生异常"), e);
+        } finally {
+            if (os != null) {
+                IOUtils.closeQuietly(os);
+            }
+        }
+        return false;
     }
 }

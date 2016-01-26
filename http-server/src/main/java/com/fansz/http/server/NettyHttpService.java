@@ -11,6 +11,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,12 @@ public final class NettyHttpService {
 
     private final int httpChunkLimit;
 
+    private int readTimeOut;//读超时时间
+
+    private int writeTimeOut;//写超时时间
+
+    private int rwTimeOut;
+
     private SimpleChannelInboundHandler<FullHttpRequest> httpRequestRouter;
 
     /**
@@ -42,10 +49,15 @@ public final class NettyHttpService {
      * @param bindAddress       HTTP服务绑定的地址.
      * @param httpChunkLimit    上传文件大小限制
      */
-    private NettyHttpService(SimpleChannelInboundHandler<FullHttpRequest> httpRequestRouter, InetSocketAddress bindAddress, int httpChunkLimit) {
+    private NettyHttpService(SimpleChannelInboundHandler<FullHttpRequest> httpRequestRouter,
+                             InetSocketAddress bindAddress, int httpChunkLimit,
+                             int readTimeOut, int writeTimeOut, int rwTimeOut) {
         this.httpRequestRouter = httpRequestRouter;
         this.bindAddress = bindAddress;
         this.httpChunkLimit = httpChunkLimit;
+        this.readTimeOut = readTimeOut;
+        this.writeTimeOut = writeTimeOut;
+        this.rwTimeOut = rwTimeOut;
     }
 
 
@@ -69,7 +81,8 @@ public final class NettyHttpService {
 
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast("logging", logging);
-
+                            ch.pipeline().addLast("idleStateHandler",
+                                    new IdleStateHandler(readTimeOut, writeTimeOut, rwTimeOut));
                             pipeline.addLast("encoder", new HttpResponseEncoder());
                             pipeline.addLast("decoder", new HttpRequestDecoder());
                             pipeline.addLast("aggregator", new HttpObjectAggregator(httpChunkLimit));
@@ -117,7 +130,11 @@ public final class NettyHttpService {
         private static final int DEFAULT_HTTP_CHUNK_LIMIT = 2 * 1024 * 1024;// 默认最大2M
 
         private static final int DEFAULT_LISTEN_PORT = 80;// 默认绑定80端口
+        private static final int IDEL_TIME_OUT = 300;
 
+        private static final int READ_IDEL_TIME_OUT = 300;
+
+        private static final int WRITE_IDEL_TIME_OUT = 300;
 
         private String host;
 
@@ -126,12 +143,21 @@ public final class NettyHttpService {
 
         private int httpChunkLimit;
 
+        private int readTimeOut;//读超时时间
+
+        private int writeTimeOut;//写超时时间
+
+        private int rwTimeOut;// 读写超时时间
+
         private SimpleChannelInboundHandler<FullHttpRequest> httpRequestRouter;
 
         // 避免外部类通过new直接创建Builder对象
         private Builder() {
             port = DEFAULT_LISTEN_PORT;
             httpChunkLimit = DEFAULT_HTTP_CHUNK_LIMIT;
+            readTimeOut = READ_IDEL_TIME_OUT;
+            writeTimeOut = WRITE_IDEL_TIME_OUT;
+            rwTimeOut = IDEL_TIME_OUT;
         }
 
 
@@ -164,6 +190,32 @@ public final class NettyHttpService {
             return this;
         }
 
+        /**
+         * 当超过readTimeOut(单位为s)未读取到数据时,netty关闭连接
+         *
+         * @param readTimeOut
+         */
+        public void setReadTimeOut(int readTimeOut) {
+            this.readTimeOut = readTimeOut;
+        }
+
+        /**
+         * 当超过writeTimeOut(单位为s)未写数据时,netty关闭连接
+         *
+         * @param writeTimeOut
+         */
+        public void setWriteTimeOut(int writeTimeOut) {
+            this.writeTimeOut = writeTimeOut;
+        }
+
+        /**
+         * 当超过rwTimeOut(单位为s)未读写数据时,netty关闭连接
+         *
+         * @param rwTimeOut
+         */
+        public void setRwTimeOut(int rwTimeOut) {
+            this.rwTimeOut = rwTimeOut;
+        }
 
         /**
          * @return {@code NettyHttpService}实例
@@ -179,7 +231,7 @@ public final class NettyHttpService {
                 bindAddress = new InetSocketAddress(host, port);
             }
 
-            return new NettyHttpService(httpRequestRouter, bindAddress, httpChunkLimit);
+            return new NettyHttpService(httpRequestRouter, bindAddress, httpChunkLimit, readTimeOut, writeTimeOut, rwTimeOut);
         }
     }
 }
