@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 添加评论事件
  */
-public class AddCommentEvent implements Serializable {
+public class AddCommentEvent extends AbstractStatistic implements Serializable {
     /**
      * 来源
      */
@@ -22,6 +22,7 @@ public class AddCommentEvent implements Serializable {
      */
 
     private Long postId;
+
 
     /**
      * 评论父ID
@@ -105,4 +106,5 @@ public class AddCommentEvent implements Serializable {
     public void setCommentContent(String commentContent) {
         this.commentContent = commentContent;
     }
+
 }

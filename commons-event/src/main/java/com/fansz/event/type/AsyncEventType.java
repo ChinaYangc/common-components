@@ -5,8 +5,14 @@ package com.fansz.event.type;
  */
 public enum AsyncEventType {
 
-    PUBLISH_POST("01", "POST"), SEND_SMS("02", "SMS"), ADD_COMMENT("03", "COMMENT"), ADD_LIKE("04", "LIKE");
-
+    PUBLISH_POST("01", "POST"),//发布帖子
+    SEND_SMS("02", "SMS"),
+    ADD_COMMENT("03", "COMMENT"),//添加评论
+    ADD_LIKE("04", "LIKE"),//点赞
+    FORWARD_POST("05", "FORWARD"),//转发帖子
+    ADD_FRIEND("06", "ADD_FRIEND"),//添加好友
+    ADD_FANDOM("07", "ADD_FANDOM"),//创建fandom
+    ADD_CHAT("08", "ADD_CHAT");//创建新的聊天会话
     private String code;
 
     private String name;

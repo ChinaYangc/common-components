@@ -9,13 +9,11 @@ import java.util.Date;
 /**
  * POST发布事件
  */
-public class PublishPostEvent implements Serializable {
+public class PublishPostEvent extends AbstractStatistic implements Serializable {
 
     private static final long serialVersionUID = -4916842445941233425L;
 
     private Long postId;
-
-    private String memberSn;
 
     private String postTitle;
 
@@ -34,7 +32,7 @@ public class PublishPostEvent implements Serializable {
 
     public PublishPostEvent(Long postId, String memberSn) {
         this.postId = postId;
-        this.memberSn = memberSn;
+        this.setPostCreator(memberSn);
         this.postTime = new Date();
         this.source = InformationSource.FANDOM;
         this.postType = PostType.POST;
@@ -42,7 +40,7 @@ public class PublishPostEvent implements Serializable {
 
     public PublishPostEvent(Long postId, String memberSn, Date postTime, String postTitle, String postContent, PostType postType) {
         this.postId = postId;
-        this.memberSn = memberSn;
+        this.setPostCreator(memberSn);
         this.postTime = postTime;
         this.postTitle = postTitle;
         this.postContent = postContent;
@@ -52,7 +50,7 @@ public class PublishPostEvent implements Serializable {
 
     public PublishPostEvent(Long postId, String memberSn, Date postTime, InformationSource source) {
         this.postId = postId;
-        this.memberSn = memberSn;
+        this.setPostCreator(memberSn);
         this.postTime = postTime;
         this.source = source;
     }
@@ -63,14 +61,6 @@ public class PublishPostEvent implements Serializable {
 
     public void setPostId(Long postId) {
         this.postId = postId;
-    }
-
-    public String getMemberSn() {
-        return memberSn;
-    }
-
-    public void setMemberSn(String memberSn) {
-        this.memberSn = memberSn;
     }
 
     public InformationSource getSource() {

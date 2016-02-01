@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 点赞事件
  */
-public class AddLikeEvent implements Serializable {
+public class AddLikeEvent extends AbstractStatistic implements Serializable {
 
     /**
      * 来源
