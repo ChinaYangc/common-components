@@ -12,7 +12,9 @@ public enum AsyncEventType {
     FORWARD_POST("05", "FORWARD"),//转发帖子
     ADD_FRIEND("06", "ADD_FRIEND"),//添加好友
     ADD_FANDOM("07", "ADD_FANDOM"),//创建fandom
-    ADD_CHAT("08", "ADD_CHAT");//创建新的聊天会话
+    ADD_CHAT("08", "ADD_CHAT"),//创建新的聊天会话
+    USER("09", "USER");//用户事件(用户注册,修改)
+
     private String code;
 
     private String name;
