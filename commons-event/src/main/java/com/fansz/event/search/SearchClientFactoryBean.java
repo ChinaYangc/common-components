@@ -37,7 +37,7 @@ public class SearchClientFactoryBean implements FactoryBean<Client>, DisposableB
         client = TransportClient.builder().settings(settings).build();
         InetSocketTransportAddress[] nodes = resolveAddress(addresses);
         if (CollectionTools.isNotNullOrEmptyArray(nodes)) {
-            client.addTransportAddresses();
+            client.addTransportAddresses(nodes);
         } else {
             logger.error("please configure elasticsearch node address,current is {}", addresses);
         }
@@ -65,7 +65,7 @@ public class SearchClientFactoryBean implements FactoryBean<Client>, DisposableB
         List<InetSocketTransportAddress> nodes = new ArrayList<>();
         if (StringTools.isNotBlank(addresses)) {
             for (String addr : addresses.split(",")) {
-                String[] hostAndAddr = addr.split(",");
+                String[] hostAndAddr = addr.split(":");
                 String host = hostAndAddr[0];
                 int port = Integer.valueOf(hostAndAddr[1]);
                 nodes.add(new InetSocketTransportAddress(new InetSocketAddress(host, port)));
